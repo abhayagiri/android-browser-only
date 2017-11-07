@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Browser Only</string>
+    <string name="set_website_url">Pinned Website URL</string>
+    <string name="default_url">https://www.abhayagiri.org/</string>
+    <string name="device_admin_label">Browser Only Device Admin</string>
+    <string name="device_admin_description">Binds this application to act as a device owner for kiosk mode.</string>
+</resources>
