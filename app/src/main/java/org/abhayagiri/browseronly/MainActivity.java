@@ -1,50 +1,73 @@
 package org.abhayagiri.browseronly;
 
+import android.app.ActivityManager;
 import android.app.AlertDialog;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.InputType;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
-import android.widget.Toast;
+import java.lang.Runnable;
 
 public class MainActivity extends AppCompatActivity {
 
+    String url;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setPropertiesFromPreferences();
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String url = retrieveUrl();
-        final EditText urlEditor = new EditText(this);
-        urlEditor.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        urlEditor.setText(url);
-        urlEditor.setSelection(0, url.length());
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
 
-        AlertDialog preferences = new AlertDialog.Builder(this)
-                .setView(urlEditor)
+        final EditText urlEdit = new EditText(this);
+        urlEdit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        urlEdit.setText(url);
+        urlEdit.setHint(getString(R.string.url_hint));
+        layout.addView(urlEdit);
+
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(layout)
                 .setTitle(R.string.app_name)
-                .setMessage(R.string.set_website_url)
-                .setPositiveButton("Start",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-                                String url = urlEditor.getText().toString().trim();
-                                storeUrl(url);
-                                startWebView(url);
-                        }
-                    })
+                .setPositiveButton(android.R.string.ok, null)
                 .setCancelable(false)
                 .create();
-        preferences.show();
+        dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                url = urlEdit.getText().toString().trim();
+                if (url.isEmpty()) {
+                    urlEdit.setError(getString(R.string.error_blank));
+                };
+                if (!url.isEmpty()) {
+                    dialog.dismiss();
+                    setPreferencesFromProperties();
+                    ensureLockTask();
+                    hideUI();
+                    startWebView();
+                }
+            }
+        });
+
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                hideUI();
+                handler.postDelayed(this, 5000);
+            }
+        }, 5000);
     }
 
     @Override
@@ -53,13 +76,19 @@ public class MainActivity extends AppCompatActivity {
         hideUI();
     }
 
-    private String retrieveUrl() {
-        SharedPreferences preferences = this.getSharedPreferences("preferences", MODE_PRIVATE);
-        String url = preferences.getString("url", getString(R.string.default_url));
-        return url;
+    private void ensureLockTask() {
+        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if (activityManager.getLockTaskModeState() == ActivityManager.LOCK_TASK_MODE_NONE) {
+            startLockTask();
+        }
     }
 
-    private void storeUrl(String url) {
+    private void setPropertiesFromPreferences() {
+        SharedPreferences preferences = this.getSharedPreferences("preferences", MODE_PRIVATE);
+        url = preferences.getString("url", "");
+    }
+
+    private void setPreferencesFromProperties() {
         SharedPreferences preferences = this.getSharedPreferences("preferences", MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.clear();
@@ -67,13 +96,7 @@ public class MainActivity extends AppCompatActivity {
         editor.commit();
     }
 
-    private void startWebView(String url) {
-        if (setDeviceOwner()) {
-            startLockTask();
-        } else {
-            Toast.makeText(getApplicationContext(),"Could not set device owner", Toast.LENGTH_LONG).show();
-        }
-
+    private void startWebView() {
         WebView myWebView = (WebView) findViewById(R.id.webview);
         WebSettings webSettings = myWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -81,20 +104,6 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
         myWebView.loadUrl(url);
-    }
-
-    private boolean setDeviceOwner() {
-        DevicePolicyManager myDevicePolicyManager =
-                (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        ComponentName myDPM = new ComponentName(this, DeviceAdmin.class);
-
-        if (myDevicePolicyManager.isDeviceOwnerApp(this.getPackageName())) {
-            String[] packages = {this.getPackageName()};
-            myDevicePolicyManager.setLockTaskPackages(myDPM, packages);
-            return true;
-        } else {
-            return false;
-        }
     }
 
     private int hideFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE

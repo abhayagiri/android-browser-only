@@ -1,7 +1,13 @@
 <resources>
     <string name="app_name">Browser Only</string>
-    <string name="set_website_url">Pinned Website URL</string>
-    <string name="default_url">https://www.abhayagiri.org/</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="cancel">Cancel</string>
+    <string name="exit">Exit</string>
+    <string name="settings">settings</string>
+    <string name="url_hint">URL (e.g., https://www.abhayagiri.org/)</string>
+    <string name="password_hint">Password</string>
+    <string name="error_blank">This cannot be blank.</string>
+    <string name="error_password_mismatch">Password does not match.</string>
     <string name="device_admin_label">Browser Only Device Admin</string>
     <string name="device_admin_description">Binds this application to act as a device owner for kiosk mode.</string>
 </resources>
